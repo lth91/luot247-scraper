@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.luot247.scraper</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/opbot/.openclaw/skills/luot247-scraper/deploy/run.sh</string>
+    </array>
+
+    <!-- Chạy mỗi giờ ở phút thứ 20 (giữa cron crawl-electricity-news ở phút 0 và discovery-rss-news ở phút 30) -->
+    <!-- Giờ VN 7h-22h tương ứng UTC 0-15. Mac Mini chạy ở local timezone (TZ env) — nếu Mac Mini set Asia/Ho_Chi_Minh thì list này là 7-22 VN. -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>10</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>11</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>12</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>13</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>14</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>20</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>20</integer></dict>
+        <dict><key>Hour</key><integer>22</integer><key>Minute</key><integer>20</integer></dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>/Users/opbot/.openclaw/logs/luot247-scraper.stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/opbot/.openclaw/logs/luot247-scraper.stderr.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
