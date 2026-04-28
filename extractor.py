@@ -70,39 +70,79 @@ META_DATE_PATTERNS = [
     re.compile(r'<time[^>]+datetime=["\']([^"\']+)["\']', re.I),
 ]
 
-# Inline DD/MM/YYYY format hay xuất hiện trong HTML của EVN family
-INLINE_DATE_RE = re.compile(r"\b(\d{1,2})[/-](\d{1,2})[/-](\d{4})\b")
+# EVN CMS thường dùng span IDs/classes này, ví dụ:
+#   <span id="ContentPlaceHolder1_..._lblAproved">Thứ ba, 28/4/2026 | 14:02 GMT+7</span>
+#   <p class="post-date">Ngày đăng 03/04/2026</p>
+CMS_CONTAINER_DATE_RE = re.compile(
+    r'(?:lblAproved|lblNgayDang|lblPublishDate|lblPublish|class=["\'][^"\']*'
+    r'(?:post-date|article-date|publish-date|news-date|entry-date|date-publish)[^"\']*["\'])'
+    r'[^>]*>[^<]{0,80}?(\d{1,2})[/-](\d{1,2})[/-](20\d{2})',
+    re.I,
+)
+
+# Vietnamese keywords kèm date: "Ngày đăng 03/04/2026", "Cập nhật 28/4/2026", "Đăng ngày DD/MM"
+VN_KEYWORD_DATE_RE = re.compile(
+    r"(?:Ng[àa]y\s*đ[ăa]ng|C[aậ]p\s*nh[aậ]t|Đ[ăa]ng\s*ng[àa]y|Xu[aấ]t\s*b[aả]n|Đ[ăa]ng\s*l[uú]c)"
+    r"[\s:]*(\d{1,2})[/-](\d{1,2})[/-](20\d{2})",
+    re.I,
+)
+
+# DD/MM/YYYY có kèm HH:MM — pattern điển hình của publish timestamp
+PUBLISH_TIMESTAMP_RE = re.compile(
+    r"\b(\d{1,2})[/-](\d{1,2})[/-](20\d{2})\s*[|,\s\xa0]+\s*(\d{1,2}):(\d{2})\b",
+)
+
+
+def _build_iso(d: int, mo: int, y: int) -> str | None:
+    from datetime import datetime, timezone
+    if not (2020 <= y <= 2030 and 1 <= mo <= 12 and 1 <= d <= 31):
+        return None
+    try:
+        return datetime(y, mo, d, tzinfo=timezone.utc).isoformat()
+    except ValueError:
+        return None
 
 
 def extract_published_from_html(html: str) -> str | None:
     from datetime import datetime, timezone
 
+    # 1) Meta tags chuẩn
     for pat in META_DATE_PATTERNS:
         m = pat.search(html)
         if m:
             try:
-                # Heuristic: parse ISO; nếu fail, bỏ qua
                 raw = m.group(1).strip()
-                # Một số site dùng "+0710:14:17" ngộ nghĩnh — strip suffix nếu có lỗi parse
                 try:
                     dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
                 except ValueError:
-                    # Try split ngoài timezone
                     base = raw.split("+")[0].split("Z")[0]
                     dt = datetime.fromisoformat(base)
                     dt = dt.replace(tzinfo=timezone.utc)
                 return dt.astimezone(timezone.utc).isoformat()
             except Exception:
                 continue
-    # Fallback: inline DD/MM/YYYY trong 3000 ký tự đầu của body
-    m = INLINE_DATE_RE.search(html[:3000])
+
+    # 2) Span/class metadata blocks (EVN CMS, các CMS Việt khác)
+    m = CMS_CONTAINER_DATE_RE.search(html)
     if m:
-        d, mo, y = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
-        if 2020 <= y <= 2030 and 1 <= mo <= 12 and 1 <= d <= 31:
-            try:
-                return datetime(y, mo, d, tzinfo=timezone.utc).isoformat()
-            except ValueError:
-                pass
+        iso = _build_iso(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        if iso:
+            return iso
+
+    # 3) "Ngày đăng DD/MM/YYYY", "Cập nhật DD/MM/YYYY", v.v.
+    m = VN_KEYWORD_DATE_RE.search(html)
+    if m:
+        iso = _build_iso(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        if iso:
+            return iso
+
+    # 4) DD/MM/YYYY HH:MM — publish timestamp pattern
+    m = PUBLISH_TIMESTAMP_RE.search(html)
+    if m:
+        iso = _build_iso(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        if iso:
+            return iso
+
     return None
 
 
