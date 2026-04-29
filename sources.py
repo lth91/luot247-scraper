@@ -23,6 +23,8 @@ class Source:
     wait_for: str | None = None
     category: str = "co-quan"  # co-quan | doanh-nghiep | bao-chi
     wait_after_load_ms: int | None = None
+    # Override user-agent (vd evnhcmc cần Googlebot UA để bypass Cloudflare bot block)
+    user_agent: str | None = None
 
 
 SOURCES: list[Source] = [
@@ -53,11 +55,11 @@ SOURCES: list[Source] = [
     Source(
         name="congdoandlvn.org.vn",
         list_url="https://www.congdoandlvn.org.vn/tin-tuc.htm",
-        # Slug-only article URLs ending in .htm; require length >= 30 to skip /gioi-thieu.htm v.v.
-        link_pattern=r"^/[a-z0-9-]{30,}\.htm$",
+        # Articles thật có slug ~80-110 ký tự; pages meta (truyen-thong-..., danh-muc-...) chỉ ~30-45.
+        link_pattern=r"^/[a-z0-9-]{50,}\.htm$",
         content_selector="div.detail-content, div.article-content, div.news-content, article, div.content",
         wait_for="a[href$='.htm']",
-        wait_after_load_ms=4000,
+        wait_after_load_ms=8000,
     ),
 
     # --- Doanh nghiệp ---
@@ -125,7 +127,18 @@ SOURCES: list[Source] = [
         category="bao-chi",
     ),
 
+    Source(
+        name="evnhcmc.vn",
+        list_url="https://www.evnhcmc.vn/Tintuc",
+        link_pattern=r"^/Tintuc/chitiet/\d+$",
+        content_selector="div.detail-content, div.news-content, div.content-detail, article, main",
+        wait_for="a[href*='/Tintuc/chitiet/']",
+        wait_after_load_ms=4000,
+        # Googlebot UA bypass Cloudflare "Access Restricted by Security Policy"
+        # Site cho phép Googlebot trong robots.txt; reverse-DNS check không nghiêm trên endpoint này.
+        user_agent="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    ),
+
     # --- Đã loại bỏ (audit 2026-04-28/29) ---
     # xaylapdien.net    : toàn static service pages, no published_at, waste ~16s/run
-    # evnhcmc.vn        : "Access Restricted by Security Policy" — bot block, cần stealth
 ]

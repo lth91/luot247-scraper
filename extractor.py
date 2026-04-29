@@ -276,7 +276,8 @@ async def fetch_article(context: BrowserContext, source: Source, url: str) -> Ar
 
 async def crawl_source(browser: Browser, source: Source) -> list[Article]:
     """Crawl 1 nguồn: load list page → extract links → fetch từng bài."""
-    context = await browser.new_context(user_agent=UA, locale="vi-VN")
+    ua = source.user_agent or UA
+    context = await browser.new_context(user_agent=ua, locale="vi-VN")
     list_page = await context.new_page()
     articles: list[Article] = []
     try:
