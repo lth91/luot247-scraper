@@ -76,7 +76,7 @@ META_DATE_PATTERNS = [
 #   <p class="post-date">Ngày đăng 03/04/2026</p>
 CMS_CONTAINER_DATE_RE = re.compile(
     r'(?:lblAproved|lblNgayDang|lblPublishDate|lblPublish|class=["\'][^"\']*'
-    r'(?:post-date|article-date|publish-date|news-date|entry-date|date-publish)[^"\']*["\'])'
+    r'(?:post-date|post-subinfo|article-date|publish-date|news-date|entry-date|date-publish|post-meta)[^"\']*["\'])'
     r'[^>]*>[^<]{0,80}?(\d{1,2})[/-](\d{1,2})[/-](20\d{2})',
     re.I,
 )

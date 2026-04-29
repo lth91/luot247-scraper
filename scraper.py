@@ -96,9 +96,17 @@ async def main() -> int:
                 skipped += 1
                 continue
 
-            # Final published_at: prefer meta, else LLM
+            # Final published_at: prefer meta, else LLM (kèm safety check).
+            # Safety: nếu extractor không tìm thấy date, KHÔNG tin LLM nói "today"
+            # hay future date — đó thường là hallucination khi prompt mặc định
+            # năm hiện tại cho dates không có năm trong content.
             pub = art.published_at
             if not pub and llm_date:
+                today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                if llm_date >= today:
+                    print(f"  reject LLM date (today/future, no metadata): {llm_date} {art.url}", flush=True)
+                    skipped += 1
+                    continue
                 pub = f"{llm_date}T00:00:00+00:00"
             if not pub:
                 print(f"  no published_at: {art.url}", flush=True)
