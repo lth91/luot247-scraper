@@ -21,11 +21,12 @@ UA = (
     "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 )
 
-LIST_TIMEOUT_MS = 25000
-ARTICLE_TIMEOUT_MS = 20000
+LIST_TIMEOUT_MS = 35000
+ARTICLE_TIMEOUT_MS = 25000
 MAX_LINKS_PER_SOURCE = 8
 MIN_CONTENT_CHARS = 250
 MAX_CONTENT_CHARS = 8000
+DEFAULT_WAIT_AFTER_LOAD_MS = 2000
 
 
 @dataclass
@@ -155,8 +156,9 @@ async def extract_links(page: Page, source: Source) -> list[str]:
                 await page.wait_for_selector(source.wait_for, timeout=8000)
             except Exception:
                 pass  # Selector không xuất hiện → vẫn thử extract
-        # Thêm 1.5s cho lazy-load các <a> chậm
-        await asyncio.sleep(1.5)
+        # Lazy-load buffer (cấu hình per-source cho React/JS-heavy sites)
+        wait_ms = getattr(source, "wait_after_load_ms", None) or DEFAULT_WAIT_AFTER_LOAD_MS
+        await asyncio.sleep(wait_ms / 1000)
     except Exception as e:
         print(f"  [{source.name}] list page load error: {e}", flush=True)
         return []

@@ -5,8 +5,10 @@ Config nguồn JS-rendered cần Playwright. Mỗi nguồn:
 - link_pattern: regex match pathname (sau urlparse) bài chi tiết
 - content_selector: CSS selector cho khối nội dung bài (fallback sang article/main nếu None)
 - wait_for: optional CSS selector chờ hiển thị trước khi extract (cho site lazy-load)
+- wait_after_load_ms: thêm thời gian chờ sau khi load xong (default 2000ms),
+  tăng lên cho React lazy-load (vd evnhanoi cần ~8000ms)
 
-Patterns đã được audit thực tế ngày 2026-04-28 — xem audit_sources.py.
+Patterns đã được audit thực tế ngày 2026-04-28 và bổ sung 2026-04-29 — xem audit_sources.py.
 """
 
 from dataclasses import dataclass
@@ -20,6 +22,7 @@ class Source:
     content_selector: str | None = None
     wait_for: str | None = None
     category: str = "co-quan"  # co-quan | doanh-nghiep | bao-chi
+    wait_after_load_ms: int | None = None
 
 
 SOURCES: list[Source] = [
@@ -32,11 +35,29 @@ SOURCES: list[Source] = [
         wait_for="a[href*='/tin-tuc-nganh-dien/']",
     ),
     Source(
+        name="evnhanoi.vn",
+        # React SPA — chỉ root page mới render được news links sau ~6-8s
+        list_url="https://evnhanoi.vn",
+        link_pattern=r"^/cms/news/[a-z0-9-]+$",
+        content_selector="div.news-content, div.article-content, article, main",
+        wait_for="a[href*='/cms/news/']",
+        wait_after_load_ms=8000,
+    ),
+    Source(
         name="evnfc.vn",
         list_url="https://www.evnfc.vn/tin-tuc",
         link_pattern=r"^/tin-chi-tiet/[a-z0-9-]+$",
         content_selector="div.article-content, div.detail-content, article, div.content",
         wait_for="a[href*='/tin-chi-tiet/']",
+    ),
+    Source(
+        name="congdoandlvn.org.vn",
+        list_url="https://www.congdoandlvn.org.vn/tin-tuc.htm",
+        # Slug-only article URLs ending in .htm; require length >= 30 to skip /gioi-thieu.htm v.v.
+        link_pattern=r"^/[a-z0-9-]{30,}\.htm$",
+        content_selector="div.detail-content, div.article-content, div.news-content, article, div.content",
+        wait_for="a[href$='.htm']",
+        wait_after_load_ms=4000,
     ),
 
     # --- Doanh nghiệp ---
@@ -57,13 +78,13 @@ SOURCES: list[Source] = [
         category="doanh-nghiep",
     ),
     Source(
-        name="xaylapdien.net",
-        # Slug-only paths, no .html. Pattern requires keyword + length to avoid category pages.
-        list_url="https://xaylapdien.net/tin-tuc-nganh-dien-moi-nhat",
-        link_pattern=r"^/[a-z0-9-]{30,}$",
-        content_selector="div.article-content, div.entry-content, article, div.post-content, div.detail",
-        wait_for="a",
+        name="nbtpc.com.vn",
+        list_url="https://nbtpc.com.vn/c2/news-c/Tin-tuc-Hoat-dong-1.aspx",
+        link_pattern=r"^/d4/news/[A-Za-z0-9-]+-\d+-\d+\.aspx$",
+        content_selector="div.news-detail, div.article-content, article, div.content",
+        wait_for="a[href*='/d4/news/']",
         category="doanh-nghiep",
+        wait_after_load_ms=4000,
     ),
 
     # --- Báo chí ---
@@ -104,9 +125,7 @@ SOURCES: list[Source] = [
         category="bao-chi",
     ),
 
-    # --- TODO: chưa scrape được, cần fix riêng (audit 2026-04-28) ---
-    # evnhcmc.vn        : "Access Restricted by Security Policy" — bot block, cần stealth/proxy
-    # evnhanoi.vn       : React SPA, JS chỉ render dashboard menu — cần wait_for cụ thể hơn
-    # nbtpc.com.vn      : 0 anchor sau JS render — cần probe tiếp
-    # congdoandlvn.org.vn: 0 anchor sau JS render — cần probe tiếp
+    # --- Đã loại bỏ (audit 2026-04-28/29) ---
+    # xaylapdien.net    : toàn static service pages, no published_at, waste ~16s/run
+    # evnhcmc.vn        : "Access Restricted by Security Policy" — bot block, cần stealth
 ]
