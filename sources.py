@@ -147,9 +147,10 @@ SOURCES: list[Source] = [
     Source(
         name="laodong.vn",
         list_url="https://laodong.vn/kinh-doanh",
-        # General kinh-doanh feed có lẫn xổ số, vàng, BĐS — filter URL keyword điện
-        # tránh nhập tin off-topic vào DB. Pattern theleader.vn approach.
-        link_pattern=r"^/[a-z0-9-]+/[^/]*(?:dien|nang-luong|evn|bess|thuy-dien|nhiet-dien|dien-luc|dien-mat-troi|dien-gio)[^/]*-\d{6,8}\.ldo$",
+        # Strict keyword filter — chỉ phrase đa-từ specific, KHÔNG dùng `dien` alone
+        # vì false positive nặng: dien-bien (Điện Biên province), dien-tu (electronic),
+        # dien-thoai (phone), dien-anh (cinema), dien-may (appliance), dien-vien (actor).
+        link_pattern=r"^/[a-z0-9-]+/[^/]*(?:dien-luc|dien-gio|dien-mat-troi|dien-hat-nhan|dien-khi|dien-sinh-khoi|thuy-dien|nhiet-dien|nang-luong|evn|bess|cung-ung-dien|gia-dien|tiet-kiem-dien|luoi-dien|quy-hoach-dien|hydro-xanh)[^/]*-\d{6,8}\.ldo$",
         content_selector="div.art-body, div.article__body, div.detail-content, div.detail__content, article, main",
         wait_for="a[href$='.ldo']",
         wait_after_load_ms=5000,  # site nặng JS + nhiều CDN script (probe thấy 25+ resource)
@@ -158,8 +159,8 @@ SOURCES: list[Source] = [
     Source(
         name="qdnd.vn",
         list_url="https://www.qdnd.vn/kinh-te",
-        # Similar Lao Động — kinh-te feed lẫn giá vàng/USD/heo, filter keyword
-        link_pattern=r"^/kinh-te/tin-tuc/[^/]*(?:dien|nang-luong|evn|bess|thuy-dien|nhiet-dien|dien-luc|dien-mat-troi|dien-gio)[^/]*-\d{6,7}$",
+        # Same strict filter — round 2 thấy lọt "thuong-mai-dien-tu" (e-commerce).
+        link_pattern=r"^/kinh-te/tin-tuc/[^/]*(?:dien-luc|dien-gio|dien-mat-troi|dien-hat-nhan|dien-khi|dien-sinh-khoi|thuy-dien|nhiet-dien|nang-luong|evn|bess|cung-ung-dien|gia-dien|tiet-kiem-dien|luoi-dien|quy-hoach-dien|hydro-xanh)[^/]*-\d{6,7}$",
         content_selector="div.detail-content, div.article-content, div.news-content, div.article__body, div.entry-content, article, main",
         wait_for="a[href*='/kinh-te/tin-tuc/']",
         wait_after_load_ms=4000,
