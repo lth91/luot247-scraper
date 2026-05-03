@@ -23,7 +23,9 @@ DUMPS = [
         "name": "CPC article",
         "url": "https://cpc.vn/vi-vn/Tin-tuc-su-kien/Tin-tuc-chi-tiet/articleId/107280",
         "out": "/tmp/cpc_article.html",
-        "wait_ms": 4000,
+        # 15s wait — CPC dùng JS render relative time ("X giờ trước"); cần đợi JS
+        # finish để timePassed text được thay vào span.
+        "wait_ms": 15000,
     },
     {
         "name": "nbtpc article",

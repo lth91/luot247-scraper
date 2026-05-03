@@ -51,6 +51,32 @@ def grep_cpc_date() -> None:
         else:
             print(f"  [{name}] NO MATCH", flush=True)
 
+    # CPC-specific: tìm timePassed source — JS variable chứa Unix timestamp/ISO
+    print("\n  --- CPC-specific timePassed source ---", flush=True)
+    # Tìm gán biến: var X = "..." hoặc ItemDate, PublishDate, ApprovedDate
+    js_patterns = [
+        ("var ItemDate / PublishDate / ApprovedDate", r'(?:ItemDate|PublishDate|ApprovedDate|CreatedDate|ItemPublishDate)\s*[:=]\s*["\']?([^"\',\s]{8,30})'),
+        ("Unix timestamp >2010 (10-digit)", r'\b(1[3-9]\d{8})\b'),
+        ("Inline JSON {date:'...'}", r'\{[^{}]*(?:date|publish|created)[^{}]*:[^{}]*?["\']([^"\']{8,30})["\']'),
+        ("DD-MM-YYYY format", r'\b(\d{1,2}-\d{1,2}-20\d{2})\b'),
+        ("data-* attr", r'data-(?:item|article|news|post)?(?:date|time|publish)["\']?\s*=\s*["\']([^"\']+)["\']'),
+        ("aspx VIEWSTATE date", r'__VIEWSTATE[^"]*"[^"]*"\s+\/>.*?(20\d{2}[-/]\d{1,2}[-/]\d{1,2})'),
+    ]
+    for name, pat in js_patterns:
+        matches = re.findall(pat, html, re.I | re.S)
+        unique = list(dict.fromkeys(matches))[:5]
+        if unique:
+            print(f"\n  [{name}] found {len(matches)} match(es), first 5:", flush=True)
+            for m in unique:
+                print(f"    {m}", flush=True)
+
+    # Dump 200 chars around 'timePassed' to see context
+    pos = html.find("timePassed")
+    if pos > 0:
+        snippet = html[max(0, pos-300):pos+300]
+        print(f"\n  --- 600-char context around 'timePassed' ---", flush=True)
+        print(f"  {snippet!r}", flush=True)
+
 
 def grep_nbtpc_content_ids() -> None:
     section("nbtpc — All div[id*=Content] with text snippets")
@@ -62,7 +88,7 @@ def grep_nbtpc_content_ids() -> None:
     div_pattern = re.compile(r'<div[^>]+id=["\']([^"\']*Content[^"\']*)["\']', re.I)
     ids = div_pattern.findall(html)
     print(f"  Found {len(ids)} div(s) with id containing 'Content':", flush=True)
-    for i, did in enumerate(dict.fromkeys(ids)[:20]):
+    for i, did in enumerate(list(dict.fromkeys(ids))[:20]):
         print(f"    [{i}] id='{did}'", flush=True)
 
 
