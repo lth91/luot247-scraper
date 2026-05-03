@@ -25,6 +25,10 @@ class Source:
     wait_after_load_ms: int | None = None
     # Override user-agent (vd evnhcmc cần Googlebot UA để bypass Cloudflare bot block)
     user_agent: str | None = None
+    # Fallback: nếu site KHÔNG expose published_at trong HTML/DOM (vd CPC dùng
+    # JS render relative time mà không lưu raw timestamp), dùng crawled_at làm
+    # published_at. Mất precision ngày nhưng có data. Top articles luôn fresh.
+    fallback_published_to_now: bool = False
 
 
 SOURCES: list[Source] = [
@@ -179,6 +183,11 @@ SOURCES: list[Source] = [
         wait_for="a[href*='/Tin-tuc-chi-tiet/']",
         wait_after_load_ms=4000,
         category="co-quan",
+        # CPC không expose published_at trong HTML/DOM. Dùng crawled_at làm fallback.
+        # Top 8 articles từ list page luôn fresh (sequential ID 107000+, mới nhất top).
+        # Audit 03/05: đã probe 10+ date pattern, đều fail. Date chỉ render qua JS
+        # cho comments section, không cho article body.
+        fallback_published_to_now=True,
     ),
 
     # --- TODO: NPT (npt.com.vn) ---
