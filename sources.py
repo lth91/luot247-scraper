@@ -87,7 +87,9 @@ SOURCES: list[Source] = [
         name="nbtpc.com.vn",
         list_url="https://nbtpc.com.vn/c2/news-c/Tin-tuc-Hoat-dong-1.aspx",
         link_pattern=r"^/d4/news/[A-Za-z0-9-]+-\d+-\d+\.aspx$",
-        content_selector="div.news-detail, div.article-content, article, div.content",
+        # Audit 03/05 (debug_html_dump.py): nbtpc body trong DotNetNuke ContentPane
+        # — div[id*='Content']#1 có 1115 chars vs default selectors miss hết (≤153).
+        content_selector="div[id*='Content'], div.news-detail, div.article-content, article, div.content",
         wait_for="a[href*='/d4/news/']",
         category="doanh-nghiep",
         wait_after_load_ms=4000,
