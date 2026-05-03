@@ -25,6 +25,10 @@ class Source:
     wait_after_load_ms: int | None = None
     # Override user-agent (vd evnhcmc cần Googlebot UA để bypass Cloudflare bot block)
     user_agent: str | None = None
+    # Fallback: nếu site KHÔNG expose published_at trong HTML/DOM (vd CPC dùng
+    # JS render relative time mà không lưu raw timestamp), dùng crawled_at làm
+    # published_at. Mất precision ngày nhưng có data. Top articles luôn fresh.
+    fallback_published_to_now: bool = False
 
 
 SOURCES: list[Source] = [
@@ -71,19 +75,25 @@ SOURCES: list[Source] = [
         wait_for="a[href*='/d4/news/']",
         category="doanh-nghiep",
     ),
-    Source(
-        name="mientrungpid.com.vn",
-        list_url="https://mientrungpid.com.vn/tin-tuc/tin-tuc-nganh-dien",
-        link_pattern=r"^/tin-chi-tiet/id/\d+/.+",
-        content_selector="div.detail-content, div.article-content, article, div.content",
-        wait_for="a[href*='/tin-chi-tiet/']",
-        category="doanh-nghiep",
-    ),
+    # mientrungpid.com.vn — DISABLED 03/05/2026.
+    # Audit B3a: list page load OK + 43 anchor unique, NHƯNG ID range chỉ 173-329
+    # (bài cũ nhất 2018, mới nhất 2023). Site dormant, không có bài fresh trong
+    # 3-day window → 0 article insert kể cả khi extractor work.
+    # Source(
+    #     name="mientrungpid.com.vn",
+    #     list_url="https://mientrungpid.com.vn/tin-tuc/tin-tuc-nganh-dien",
+    #     link_pattern=r"^/tin-chi-tiet/id/\d+/.+",
+    #     content_selector="div.detail-content, div.article-content, article, div.content",
+    #     wait_for="a[href*='/tin-chi-tiet/']",
+    #     category="doanh-nghiep",
+    # ),
     Source(
         name="nbtpc.com.vn",
         list_url="https://nbtpc.com.vn/c2/news-c/Tin-tuc-Hoat-dong-1.aspx",
         link_pattern=r"^/d4/news/[A-Za-z0-9-]+-\d+-\d+\.aspx$",
-        content_selector="div.news-detail, div.article-content, article, div.content",
+        # Audit 03/05 (debug_html_dump.py): nbtpc body trong DotNetNuke ContentPane
+        # — div[id*='Content']#1 có 1115 chars vs default selectors miss hết (≤153).
+        content_selector="div[id*='Content'], div.news-detail, div.article-content, article, div.content",
         wait_for="a[href*='/d4/news/']",
         category="doanh-nghiep",
         wait_after_load_ms=4000,
@@ -138,6 +148,52 @@ SOURCES: list[Source] = [
         # Site cho phép Googlebot trong robots.txt; reverse-DNS check không nghiêm trên endpoint này.
         user_agent="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
     ),
+
+    # --- Phase B3b: site mới có anti-bot, probe xác nhận khả thi 03/05/2026 ---
+    Source(
+        name="laodong.vn",
+        list_url="https://laodong.vn/kinh-doanh",
+        # Strict keyword filter — chỉ phrase đa-từ specific, KHÔNG dùng `dien` alone
+        # vì false positive nặng: dien-bien (Điện Biên province), dien-tu (electronic),
+        # dien-thoai (phone), dien-anh (cinema), dien-may (appliance), dien-vien (actor).
+        link_pattern=r"^/[a-z0-9-]+/[^/]*(?:dien-luc|dien-gio|dien-mat-troi|dien-hat-nhan|dien-khi|dien-sinh-khoi|thuy-dien|nhiet-dien|nang-luong|evn|bess|cung-ung-dien|gia-dien|tiet-kiem-dien|luoi-dien|quy-hoach-dien|hydro-xanh)[^/]*-\d{6,8}\.ldo$",
+        content_selector="div.art-body, div.article__body, div.detail-content, div.detail__content, article, main",
+        wait_for="a[href$='.ldo']",
+        wait_after_load_ms=5000,  # site nặng JS + nhiều CDN script (probe thấy 25+ resource)
+        category="bao-chi",
+    ),
+    Source(
+        name="qdnd.vn",
+        list_url="https://www.qdnd.vn/kinh-te",
+        # Same strict filter — round 2 thấy lọt "thuong-mai-dien-tu" (e-commerce).
+        link_pattern=r"^/kinh-te/tin-tuc/[^/]*(?:dien-luc|dien-gio|dien-mat-troi|dien-hat-nhan|dien-khi|dien-sinh-khoi|thuy-dien|nhiet-dien|nang-luong|evn|bess|cung-ung-dien|gia-dien|tiet-kiem-dien|luoi-dien|quy-hoach-dien|hydro-xanh)[^/]*-\d{6,7}$",
+        content_selector="div.detail-content, div.article-content, div.news-content, div.article__body, div.entry-content, article, main",
+        wait_for="a[href*='/kinh-te/tin-tuc/']",
+        wait_after_load_ms=4000,
+        category="bao-chi",
+    ),
+    Source(
+        name="cpc.vn",
+        # Site redirect /tin-tuc → /tin-tuc-su-kien. Trỏ thẳng để skip 1 hop.
+        list_url="https://cpc.vn/vi-vn/tin-tuc-su-kien",
+        # DotNetNuke article URL: /vi-vn/Tin-tuc-su-kien/Tin-tuc-chi-tiet/articleId/<id>
+        # CPC = EVN miền Trung → toàn bài điện, không cần keyword filter
+        link_pattern=r"^/vi-vn/Tin-tuc-su-kien/Tin-tuc-chi-tiet/articleId/\d+$",
+        content_selector="div.detail-content, div.news-detail, div.article-content, article, main",
+        wait_for="a[href*='/Tin-tuc-chi-tiet/']",
+        wait_after_load_ms=4000,
+        category="co-quan",
+        # CPC không expose published_at trong HTML/DOM. Dùng crawled_at làm fallback.
+        # Top 8 articles từ list page luôn fresh (sequential ID 107000+, mới nhất top).
+        # Audit 03/05: đã probe 10+ date pattern, đều fail. Date chỉ render qua JS
+        # cho comments section, không cho article body.
+        fallback_published_to_now=True,
+    ),
+
+    # --- TODO: NPT (npt.com.vn) ---
+    # Probe 03/05/2026: D1N cookie auto-handled OK, nhưng list URL
+    # /tin-tuc-su-kien.html → 404. Cần probe path đúng (.aspx? /news? root?)
+    # trước khi thêm Source entry. Defer follow-up.
 
     # --- Đã loại bỏ (audit 2026-04-28/29) ---
     # xaylapdien.net    : toàn static service pages, no published_at, waste ~16s/run

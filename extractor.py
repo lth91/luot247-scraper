@@ -171,14 +171,18 @@ async def extract_links(page: Page, source: Source) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []
     base_origin = f"{urlparse(source.list_url).scheme}://{urlparse(source.list_url).netloc}"
+    # Strip "www." khỏi netloc khi compare same-host. Audit 03/05 phát hiện
+    # congdoandlvn.org.vn xài absolute URLs KHÔNG có www trong anchor href, nhưng
+    # list_url có www → strict netloc compare reject hết. Cho phép cả 2 dạng.
+    base_host = urlparse(base_origin).netloc.lower().removeprefix("www.")
     for href in hrefs:
         if not href:
             continue
         canon = canonicalize(href, source.list_url)
         if not canon:
             continue
-        # Same-host only
-        if urlparse(canon).netloc.lower() != urlparse(base_origin).netloc.lower():
+        canon_host = urlparse(canon).netloc.lower().removeprefix("www.")
+        if canon_host != base_host:
             continue
         # Match pattern trên pathname (hoặc full URL — pattern viết để match được cả 2)
         path = urlparse(canon).path
@@ -261,6 +265,10 @@ async def fetch_article(context: BrowserContext, source: Source, url: str) -> Ar
             return None
 
         published_at = extract_published_from_html(html)
+        # Fallback: site như CPC không expose date — dùng now() để bài vẫn vào DB.
+        if published_at is None and getattr(source, "fallback_published_to_now", False):
+            from datetime import datetime, timezone
+            published_at = datetime.now(timezone.utc).isoformat()
         return Article(
             source_name=f"Mac Mini ({source.name})",
             source_category=source.category,
