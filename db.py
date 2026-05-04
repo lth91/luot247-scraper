@@ -86,3 +86,35 @@ def update_virtual_source_crawled() -> None:
         },
         timeout=15,
     )
+
+
+def fetch_playwright_sources_from_db() -> list[dict]:
+    """
+    Fetch electricity_sources rows feed_type='playwright' để Mac Mini cào.
+    Bao gồm cả pending_review=true (Phase E vừa add, đang test 24h) — Mac Mini
+    cào, nếu insert được bài thì sau cron auto-flip is_active=true.
+
+    Trả về list dict raw từ Postgrest. Caller convert sang Source dataclass.
+    """
+    url = (
+        f"{_base_url()}/rest/v1/electricity_sources"
+        "?select=id,name,base_url,list_url,scraper_config,is_active,pending_review"
+        "&feed_type=eq.playwright"
+        "&or=(is_active.eq.true,pending_review.eq.true)"
+    )
+    res = requests.get(url, headers=_headers(), timeout=20)
+    if res.status_code != 200:
+        print(f"  fetch_playwright_sources_from_db HTTP {res.status_code}: {res.text[:200]}", flush=True)
+        return []
+    return res.json()
+
+
+def lookup_source_id_by_name(name: str) -> str | None:
+    """Tìm source row id theo name (URL-encode để safe với spaces/dots)."""
+    from urllib.parse import quote
+    url = f"{_base_url()}/rest/v1/electricity_sources?select=id&name=eq.{quote(name)}"
+    res = requests.get(url, headers=_headers(), timeout=15)
+    if res.status_code != 200:
+        return None
+    rows = res.json()
+    return rows[0]["id"] if rows else None

@@ -26,12 +26,59 @@ try:
 except ImportError:
     pass
 
-from db import existing_hashes, insert_article, update_virtual_source_crawled, virtual_source_id
+from db import (
+    existing_hashes,
+    fetch_playwright_sources_from_db,
+    insert_article,
+    lookup_source_id_by_name,
+    update_virtual_source_crawled,
+    virtual_source_id,
+)
 from extractor import Article, crawl_all
-from sources import SOURCES
+from sources import SOURCES, Source
 from summarizer import is_invalid_summary, summarize, word_count
 
 THREE_DAYS = timedelta(days=3)
+
+
+def _row_to_source(row: dict) -> Source | None:
+    """
+    Convert DB row (electricity_sources feed_type='playwright') → Source dataclass.
+    Trả None nếu config thiếu link_pattern (DB row hỏng).
+
+    scraper_config jsonb format Phase E auto-handover dùng:
+        {list_url, link_pattern, content_selector, category, wait_after_load_ms, wait_for, user_agent}
+    """
+    cfg = row.get("scraper_config") or {}
+    link_pattern = cfg.get("link_pattern")
+    if not link_pattern:
+        return None
+
+    name = row.get("name") or row.get("base_url", "unknown")
+    if not name.startswith("Mac Mini"):
+        # Phase E đã đặt name kiểu "Mac Mini (domain.tld)" — defensive cho rows cũ
+        host = name
+        try:
+            from urllib.parse import urlparse
+            host = urlparse(row.get("base_url", "")).netloc.replace("www.", "") or name
+        except Exception:
+            pass
+        name = f"Mac Mini ({host})"
+
+    list_url = cfg.get("list_url") or row.get("list_url") or row.get("base_url")
+    if not list_url:
+        return None
+
+    return Source(
+        name=name,
+        list_url=list_url,
+        link_pattern=link_pattern,
+        content_selector=cfg.get("content_selector"),
+        wait_for=cfg.get("wait_for"),
+        category=cfg.get("category", "bao-chi"),
+        wait_after_load_ms=cfg.get("wait_after_load_ms"),
+        user_agent=cfg.get("user_agent"),
+    )
 
 
 def is_too_old(published_at: str | None) -> bool:
@@ -57,10 +104,40 @@ async def main() -> int:
               "Apply migration luot247-vision/supabase/migrations/*_add_macmini_scraper_source.sql", flush=True)
         return 2
 
-    print(f"[start] {datetime.now(timezone.utc).isoformat()}  sources={len(SOURCES)}", flush=True)
+    # Merge static sources (sources.py legacy) + DB-driven Playwright sources
+    # (Phase E auto-handover). DB rows có scraper_config jsonb — convert sang
+    # Source dataclass. DB ưu tiên override sources.py nếu trùng name.
+    static_sources = list(SOURCES)
+    db_sources: list[Source] = []
+    try:
+        db_rows = fetch_playwright_sources_from_db()
+        for row in db_rows:
+            s = _row_to_source(row)
+            if s:
+                db_sources.append(s)
+    except Exception as e:
+        print(f"[warn] DB Playwright sources fetch failed: {e} — fallback sources.py only", flush=True)
+
+    static_names = {s.name for s in static_sources}
+    db_only = [s for s in db_sources if s.name not in static_names]
+    all_sources = static_sources + db_only
+
+    print(
+        f"[start] {datetime.now(timezone.utc).isoformat()}  "
+        f"sources={len(all_sources)} (static={len(static_sources)} + db_handover={len(db_only)})",
+        flush=True,
+    )
+
+    # Per-source id resolver cho insert_article. Static sources đều dùng virtual
+    # "Mac Mini Scraper" id. DB handover sources dùng id riêng của từng row.
+    src_id_by_name: dict[str, str] = {}
+    for s in db_sources:
+        sid = lookup_source_id_by_name(s.name)
+        if sid:
+            src_id_by_name[s.name] = sid
 
     # Crawl all sources via Playwright
-    articles = await crawl_all(SOURCES)
+    articles = await crawl_all(all_sources)
     print(f"[crawl] {len(articles)} articles fetched total", flush=True)
 
     if not articles:
@@ -117,8 +194,11 @@ async def main() -> int:
                 skipped += 1
                 continue
 
+            # Pick source_id: DB handover row có id riêng, static dùng virtual id
+            article_src_id = src_id_by_name.get(art.source_name, src_id)
+
             ok = insert_article({
-                "source_id": src_id,
+                "source_id": article_src_id,
                 "source_name": art.source_name,
                 "source_category": art.source_category,
                 "title": art.title,
