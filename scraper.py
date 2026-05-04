@@ -30,7 +30,7 @@ from db import (
     existing_hashes,
     fetch_playwright_sources_from_db,
     insert_article,
-    lookup_source_id_by_name,
+    update_source_crawled,
     update_virtual_source_crawled,
     virtual_source_id,
 )
@@ -109,12 +109,15 @@ async def main() -> int:
     # Source dataclass. DB ưu tiên override sources.py nếu trùng name.
     static_sources = list(SOURCES)
     db_sources: list[Source] = []
+    db_id_by_name: dict[str, str] = {}
     try:
         db_rows = fetch_playwright_sources_from_db()
         for row in db_rows:
             s = _row_to_source(row)
             if s:
                 db_sources.append(s)
+                if row.get("id"):
+                    db_id_by_name[s.name] = row["id"]
     except Exception as e:
         print(f"[warn] DB Playwright sources fetch failed: {e} — fallback sources.py only", flush=True)
 
@@ -129,16 +132,20 @@ async def main() -> int:
     )
 
     # Per-source id resolver cho insert_article. Static sources đều dùng virtual
-    # "Mac Mini Scraper" id. DB handover sources dùng id riêng của từng row.
-    src_id_by_name: dict[str, str] = {}
-    for s in db_sources:
-        sid = lookup_source_id_by_name(s.name)
-        if sid:
-            src_id_by_name[s.name] = sid
+    # "Mac Mini Scraper" id. DB handover sources dùng id riêng (đã có sẵn trong row).
+    src_id_by_name: dict[str, str] = dict(db_id_by_name)
 
     # Crawl all sources via Playwright
     articles = await crawl_all(all_sources)
     print(f"[crawl] {len(articles)} articles fetched total", flush=True)
+
+    # Mark per-source last_crawled_at cho Playwright handover rows (kể cả 0 bài
+    # insert được). Pipeline-health-check dùng field này để alert "6h chưa xử lý".
+    for name, sid in db_id_by_name.items():
+        try:
+            update_source_crawled(sid)
+        except Exception as e:
+            print(f"  [warn] update_source_crawled({name}): {e}", flush=True)
 
     if not articles:
         update_virtual_source_crawled()

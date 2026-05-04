@@ -88,6 +88,23 @@ def update_virtual_source_crawled() -> None:
     )
 
 
+def update_source_crawled(source_id: str) -> None:
+    """Update last_crawled_at cho 1 source row (per-source tracking).
+
+    Phase E DB-driven Playwright sources cần đánh dấu "đã được Mac Mini xử lý"
+    sau mỗi cycle, kể cả khi 0 bài insert được — nếu không pipeline-health-check
+    sẽ alert "6h chưa được xử lý" mãi mãi.
+    """
+    from datetime import datetime, timezone
+
+    requests.patch(
+        f"{_base_url()}/rest/v1/electricity_sources?id=eq.{source_id}",
+        headers=_headers(),
+        json={"last_crawled_at": datetime.now(timezone.utc).isoformat()},
+        timeout=15,
+    )
+
+
 def fetch_playwright_sources_from_db() -> list[dict]:
     """
     Fetch electricity_sources rows feed_type='playwright' để Mac Mini cào.
