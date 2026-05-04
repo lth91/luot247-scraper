@@ -197,10 +197,22 @@ async def main() -> int:
             # Pick source_id: DB handover row có id riêng, static dùng virtual id
             article_src_id = src_id_by_name.get(art.source_name, src_id)
 
+            # Compute source_domain để Phase E discover-candidates tự skip
+            # những domain Mac Mini đã cover (knownDomains derive từ field này).
+            from urllib.parse import urlparse
+            try:
+                host = urlparse(art.url).hostname or ""
+                if host.startswith("www."):
+                    host = host[4:]
+                source_domain = host or None
+            except Exception:
+                source_domain = None
+
             ok = insert_article({
                 "source_id": article_src_id,
                 "source_name": art.source_name,
                 "source_category": art.source_category,
+                "source_domain": source_domain,
                 "title": art.title,
                 "summary": summary,
                 "original_url": art.url,
