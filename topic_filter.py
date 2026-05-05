@@ -28,7 +28,9 @@ ELECTRICITY_KEYWORD_RE = re.compile(
     r"điện\s*lực|điện\s*gió|điện\s*mặt\s*trời|điện\s*hạt\s*nhân|điện\s*sinh\s*khối|"
     r"thủy\s*điện|nhiệt\s*điện|"
     r"lưới\s*điện|cung\s*ứng\s*điện|giá\s*điện|tiết\s*kiệm\s*điện|"
-    r"pin\s*lưu\s*trữ|lưu\s*trữ\s*điện|pin\s*(natri|lithium|li-?ion)|"
+    r"pin\s*lưu\s*trữ|lưu\s*trữ\s*(điện|năng\s*lượng)|"
+    r"pin\s*(natri|lithium|li-?ion|sắt)|"
+    r"năng\s*lượng\s*(tái\s*tạo|sạch|xanh|gió|mặt\s*trời|hạt\s*nhân|sinh\s*khối|hoá\s*thạch)|"
     r"hydro\s*xanh|xe\s*điện|"
     r"Cục\s*Điện\s*lực|"
     r"NLTT|Quy\s*hoạch\s*điện)",
