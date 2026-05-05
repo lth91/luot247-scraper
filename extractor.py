@@ -15,6 +15,7 @@ from urllib.parse import urljoin, urlparse
 from playwright.async_api import Browser, BrowserContext, Page, async_playwright
 
 from sources import Source
+from topic_filter import is_electricity_topical
 
 UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 "
@@ -259,6 +260,17 @@ async def fetch_article(context: BrowserContext, source: Source, url: str) -> Ar
         if len(content) < MIN_CONTENT_CHARS:
             print(f"  [{source.name}] content too short ({len(content)}): {url}", flush=True)
             return None
+
+        # Topic pre-filter: chỉ áp dụng cho DB-driven Playwright sources (Phase E
+        # handover từ báo general). Static sources sources.py là báo điện curated
+        # → bài nào cũng on-topic, không filter. Title + 1500 ký tự đầu của content
+        # đủ tín hiệu mà không tốn LLM API.
+        is_db_source = source.name.startswith("Mac Mini")
+        if is_db_source:
+            sample = (title or "") + " " + content[:1500]
+            if not is_electricity_topical(sample):
+                print(f"  [{source.name}] off-topic, skipped: {(title or url)[:80]}", flush=True)
+                return None
 
         published_at = extract_published_from_html(html)
         # DB-driven Playwright sources đã có name dạng "Mac Mini (host)" từ Phase E
