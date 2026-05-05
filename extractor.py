@@ -263,12 +263,12 @@ async def fetch_article(context: BrowserContext, source: Source, url: str) -> Ar
 
         # Topic pre-filter: chỉ áp dụng cho DB-driven Playwright sources (Phase E
         # handover từ báo general). Static sources sources.py là báo điện curated
-        # → bài nào cũng on-topic, không filter. Title + 1500 ký tự đầu của content
-        # đủ tín hiệu mà không tốn LLM API.
+        # → bài nào cũng on-topic, không filter. Chỉ check TITLE — content có
+        # 1-2 mention "điện" lệch ngữ cảnh (báo cáo IIP, tin chính trị) là
+        # chuyện thường, title mới phản ánh chủ đề chính.
         is_db_source = source.name.startswith("Mac Mini")
         if is_db_source:
-            sample = (title or "") + " " + content[:1500]
-            if not is_electricity_topical(sample):
+            if not is_electricity_topical(title or ""):
                 print(f"  [{source.name}] off-topic, skipped: {(title or url)[:80]}", flush=True)
                 return None
 
