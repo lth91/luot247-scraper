@@ -261,8 +261,12 @@ async def fetch_article(context: BrowserContext, source: Source, url: str) -> Ar
             return None
 
         published_at = extract_published_from_html(html)
+        # DB-driven Playwright sources đã có name dạng "Mac Mini (host)" từ Phase E
+        # handover — không wrap thêm. Static sources (sources.py) name dạng "host"
+        # thì wrap "Mac Mini (host)" để phân biệt với edge function crawler.
+        display_name = source.name if source.name.startswith("Mac Mini") else f"Mac Mini ({source.name})"
         return Article(
-            source_name=f"Mac Mini ({source.name})",
+            source_name=display_name,
             source_category=source.category,
             title=title or "(không có tiêu đề)",
             content=content,
