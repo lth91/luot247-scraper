@@ -261,16 +261,16 @@ async def fetch_article(context: BrowserContext, source: Source, url: str) -> Ar
             print(f"  [{source.name}] content too short ({len(content)}): {url}", flush=True)
             return None
 
-        # Topic pre-filter: chỉ áp dụng cho DB-driven Playwright sources (Phase E
-        # handover từ báo general). Static sources sources.py là báo điện curated
-        # → bài nào cũng on-topic, không filter. Chỉ check TITLE — content có
-        # 1-2 mention "điện" lệch ngữ cảnh (báo cáo IIP, tin chính trị) là
-        # chuyện thường, title mới phản ánh chủ đề chính.
-        is_db_source = source.name.startswith("Mac Mini")
-        if is_db_source:
-            if not is_electricity_topical(title or ""):
-                print(f"  [{source.name}] off-topic, skipped: {(title or url)[:80]}", flush=True)
-                return None
+        # Topic pre-filter: áp dụng cho TẤT CẢ sources (cả static lẫn DB
+        # Phase E). Trước đây skip cho static với giả định "curated → all
+        # on-topic", nhưng theleader.vn có channel general (tieu-diem) lọt
+        # bài SHB rebrand / NovaLand stock — slug Việt bỏ dấu "diện/diễn"
+        # match link_pattern "dien". Filter title là backstop.
+        # Bài on-topic của EVN family/báo điện sẽ pass trivially (title chứa
+        # EVN/điện lực/lưới điện), filter không gây regression.
+        if not is_electricity_topical(title or ""):
+            print(f"  [{source.name}] off-topic, skipped: {(title or url)[:80]}", flush=True)
+            return None
 
         published_at = extract_published_from_html(html)
         # DB-driven Playwright sources đã có name dạng "Mac Mini (host)" từ Phase E

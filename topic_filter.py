@@ -24,7 +24,7 @@ import re
 #     "Bộ Công Thương" (cover commerce/HR/industry, không chỉ điện).
 ELECTRICITY_KEYWORD_RE = re.compile(
     r"\b(EVN|BESS|"
-    r"điện(?!\s*(thoại|tử|ảnh|máy|tử|đàm|văn|tín))|"
+    r"(?<!gọi\s)điện(?!\s*(thoại|tử|ảnh|máy|đàm|văn|tín|báo|hoa))|"
     r"điện\s*lực|điện\s*gió|điện\s*mặt\s*trời|điện\s*hạt\s*nhân|điện\s*sinh\s*khối|"
     r"thủy\s*điện|nhiệt\s*điện|"
     r"lưới\s*điện|cung\s*ứng\s*điện|giá\s*điện|tiết\s*kiệm\s*điện|"
