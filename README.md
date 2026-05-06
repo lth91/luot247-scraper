@@ -2,8 +2,6 @@
 
 Playwright scraper cho 13 nguồn tin ngành điện JS-rendered (NPC, EVN HN, EVN HCM, ICON, PECC1, …) — bổ sung cho `luot247-vision/d` Edge Function `crawl-electricity-news` không xử lý được JS.
 
-<!-- auto-pull smoke test 2026-05-06 -->
-
 
 Chạy trên **Mac Mini** (`opbot@100.119.220.102` qua Tailscale), mỗi giờ phút thứ 20, giờ VN 7h-22h.
 
