@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.luot247.auto-pull</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/opbot/.openclaw/skills/luot247-scraper/deploy/auto-pull.sh</string>
+    </array>
+
+    <!-- Mỗi 5 phút, 24/7. Job lightweight: git fetch (offline-safe), no-op
+         nếu repo up-to-date. Kickstart scraper chỉ khi có commit mới VÀ
+         scraper không đang chạy. -->
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/opbot/.openclaw/logs/auto-pull.stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/opbot/.openclaw/logs/auto-pull.stderr.log</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>

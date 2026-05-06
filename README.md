@@ -49,8 +49,10 @@ tail -50 ~/.openclaw/logs/luot247-scraper.log
 
 # 6. Cài LaunchAgent (cron macOS)
 cp ~/.openclaw/skills/luot247-scraper/deploy/com.luot247.scraper.plist ~/Library/LaunchAgents/
+cp ~/.openclaw/skills/luot247-scraper/deploy/com.luot247.auto-pull.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.luot247.scraper.plist
-launchctl list | grep luot247  # verify
+launchctl load ~/Library/LaunchAgents/com.luot247.auto-pull.plist
+launchctl list | grep luot247  # verify (phải thấy cả 2)
 
 # Reload sau mỗi lần edit plist:
 launchctl unload ~/Library/LaunchAgents/com.luot247.scraper.plist
@@ -66,9 +68,22 @@ cd ~/luot247-scraper
 git add -A && git commit -m "..." && git push
 ```
 
-Mac Mini sẽ tự `git pull` ở lần chạy LaunchAgent kế tiếp. Không cần SSH.
+Có 2 LaunchAgent chạy song song:
+- `com.luot247.scraper` — chạy scraper mỗi giờ tại phút :20 (7:20→22:20 VN)
+- `com.luot247.auto-pull` — check `git fetch` mỗi 5 min, nếu có commit mới
+  thì pull + kickstart scraper ngay (skip nếu scraper đang chạy → đợi cycle
+  kế tiếp)
 
-Nếu muốn force chạy ngay: `ssh opbot@100.119.220.102 ~/.openclaw/skills/luot247-scraper/deploy/run.sh`.
+→ Push code → tối đa **5 min** sau Mac Mini auto apply. Zero-touch sau
+setup ban đầu. Force ngay vẫn được:
+
+```bash
+# (hiếm khi cần) force chạy ngay từ MacBook qua Tailscale:
+ssh opbot@100.119.220.102 ~/.openclaw/skills/luot247-scraper/deploy/run.sh
+```
+
+Log auto-pull: `~/.openclaw/logs/auto-pull.log` — chỉ ghi khi có commit mới
+(no-op khi up-to-date, không spam).
 
 ## Debug
 
