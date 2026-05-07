@@ -70,22 +70,32 @@ def insert_article(art_dict: dict) -> bool:
 
 
 def update_virtual_source_crawled() -> None:
-    """Update last_crawled_at trên virtual source row (nếu có)."""
+    """Update last_crawled_at trên virtual source row (nếu có).
+
+    LOG ERROR rõ ràng — silent failure đã từng làm pipeline-health-check
+    false-alarm 9.8h khi PATCH fail im lặng (audit 2026-05-07).
+    """
     sid = virtual_source_id()
     if not sid:
+        print("  [warn] update_virtual_source_crawled: virtual_source_id None", flush=True)
         return
     from datetime import datetime, timezone
 
-    requests.patch(
-        f"{_base_url()}/rest/v1/electricity_sources?id=eq.{sid}",
-        headers=_headers(),
-        json={
-            "last_crawled_at": datetime.now(timezone.utc).isoformat(),
-            "consecutive_failures": 0,
-            "last_error": None,
-        },
-        timeout=15,
-    )
+    try:
+        res = requests.patch(
+            f"{_base_url()}/rest/v1/electricity_sources?id=eq.{sid}",
+            headers=_headers(),
+            json={
+                "last_crawled_at": datetime.now(timezone.utc).isoformat(),
+                "consecutive_failures": 0,
+                "last_error": None,
+            },
+            timeout=15,
+        )
+        if res.status_code >= 400:
+            print(f"  [warn] update_virtual_source_crawled HTTP {res.status_code}: {res.text[:200]}", flush=True)
+    except Exception as e:
+        print(f"  [warn] update_virtual_source_crawled exception: {e}", flush=True)
 
 
 def update_source_crawled(source_id: str) -> None:
