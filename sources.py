@@ -139,6 +139,32 @@ SOURCES: list[Source] = [
         user_agent="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
     ),
 
+    # Phase F (08/05) — feedback từ nhân viên: 5 nguồn nhân viên dùng nhưng pipeline miss.
+    # 4/5 đã add (2 server-rendered vào electricity_sources DB, 2 SPA vào đây).
+    # diendandoanhnghiep.vn skip — pure SPA chặn cả Googlebot, cần render thật.
+    Source(
+        name="bbw.vn",
+        list_url="https://bbw.vn/kinh-te",
+        # Articles end with -NNNN.html (5+ digits) hoặc -reportNN.html. Section/nav links
+        # không có dấu gạch + số ở cuối → pattern này tự loại nav.
+        link_pattern=r"^/[a-z0-9-]+-(?:report)?\d{2,}\.html$",
+        content_selector="div.bam__detail, #article-detail, article, div.content",
+        wait_for="a[href$='.html']",
+        category="bao-chi",
+        # SPA — Googlebot UA unlocks pre-rendered HTML
+        user_agent="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    ),
+    Source(
+        name="baocamau.vn",
+        list_url="https://baocamau.vn/kinh-te",
+        # Articles có suffix -aNNNNN.html (vd -a128579.html). Section URL không khớp.
+        link_pattern=r"^/[a-z0-9-]+-a\d+\.html$",
+        content_selector="#post-content, div.ss-content, article, div.content",
+        wait_for="a[href$='.html']",
+        category="bao-chi",
+        user_agent="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    ),
+
     # --- Đã loại bỏ (audit 2026-04-28/29) ---
     # xaylapdien.net    : toàn static service pages, no published_at, waste ~16s/run
 ]
