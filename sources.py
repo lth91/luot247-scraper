@@ -30,13 +30,6 @@ class Source:
 SOURCES: list[Source] = [
     # --- EVN family (cơ quan) ---
     Source(
-        name="npc.com.vn",
-        list_url="https://npc.com.vn/tin-tuc-nganh-dien/",
-        link_pattern=r"^/tin-tuc-nganh-dien/[a-z0-9-]+-\d+\.html$",
-        content_selector="div.detail-content, div.news-detail, article, div.content-detail",
-        wait_for="a[href*='/tin-tuc-nganh-dien/']",
-    ),
-    Source(
         name="evnhanoi.vn",
         # React SPA — chỉ root page mới render được news links sau ~6-8s
         list_url="https://evnhanoi.vn",
@@ -45,49 +38,9 @@ SOURCES: list[Source] = [
         wait_for="a[href*='/cms/news/']",
         wait_after_load_ms=8000,
     ),
-    Source(
-        name="evnfc.vn",
-        list_url="https://www.evnfc.vn/tin-tuc",
-        link_pattern=r"^/tin-chi-tiet/[a-z0-9-]+$",
-        content_selector="div.article-content, div.detail-content, article, div.content",
-        wait_for="a[href*='/tin-chi-tiet/']",
-    ),
-    Source(
-        name="congdoandlvn.org.vn",
-        list_url="https://www.congdoandlvn.org.vn/tin-tuc.htm",
-        # Articles thật có slug ~80-110 ký tự; pages meta (truyen-thong-..., danh-muc-...) chỉ ~30-45.
-        link_pattern=r"^/[a-z0-9-]{50,}\.htm$",
-        content_selector="div.detail-content, div.article-content, div.news-content, article, div.content",
-        wait_for="a[href$='.htm']",
-        wait_after_load_ms=8000,
-    ),
 
     # --- Doanh nghiệp ---
-    Source(
-        name="pecc1.com.vn",
-        list_url="https://www.pecc1.com.vn",
-        link_pattern=r"^/d4/news/[A-Za-z0-9-]+-\d+-\d+\.aspx$",
-        content_selector="div.news-detail, div.article-content, article, div.content",
-        wait_for="a[href*='/d4/news/']",
-        category="doanh-nghiep",
-    ),
-    Source(
-        name="mientrungpid.com.vn",
-        list_url="https://mientrungpid.com.vn/tin-tuc/tin-tuc-nganh-dien",
-        link_pattern=r"^/tin-chi-tiet/id/\d+/.+",
-        content_selector="div.detail-content, div.article-content, article, div.content",
-        wait_for="a[href*='/tin-chi-tiet/']",
-        category="doanh-nghiep",
-    ),
-    Source(
-        name="nbtpc.com.vn",
-        list_url="https://nbtpc.com.vn/c2/news-c/Tin-tuc-Hoat-dong-1.aspx",
-        link_pattern=r"^/d4/news/[A-Za-z0-9-]+-\d+-\d+\.aspx$",
-        content_selector="div.news-detail, div.article-content, article, div.content",
-        wait_for="a[href*='/d4/news/']",
-        category="doanh-nghiep",
-        wait_after_load_ms=4000,
-    ),
+    # (none — pecc1/mientrungpid/nbtpc removed 2026-05-08, low/zero yield 30d)
 
     # --- Báo chí ---
     Source(
@@ -165,6 +118,12 @@ SOURCES: list[Source] = [
         user_agent="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
     ),
 
-    # --- Đã loại bỏ (audit 2026-04-28/29) ---
-    # xaylapdien.net    : toàn static service pages, no published_at, waste ~16s/run
+    # --- Đã loại bỏ ---
+    # xaylapdien.net      : audit 04-28/29 — toàn static service pages, no published_at, waste ~16s/run
+    # npc.com.vn          : 2026-05-08 — site healthy nhưng titles không match topic_filter (DN-speak), 0 bài 30d
+    # nbtpc.com.vn        : 2026-05-08 — content chủ yếu admin (quan trắc, tuyển dụng), 0 bài 30d
+    # evnfc.vn            : 2026-05-08 — yield rất thấp (1 bài 30d), nội dung tài chính ít liên quan điện
+    # congdoandlvn.org.vn : 2026-05-08 — connection timeout, 0 bài 30d
+    # mientrungpid.com.vn : 2026-05-08 — connection timeout, 0 bài 30d
+    # pecc1.com.vn        : 2026-05-08 — yield thấp (3 bài 30d), structure thay đổi
 ]
