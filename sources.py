@@ -25,6 +25,9 @@ class Source:
     wait_after_load_ms: int | None = None
     # Override user-agent (vd evnhcmc cần Googlebot UA để bypass Cloudflare bot block)
     user_agent: str | None = None
+    # Bypass SSL cert verification (vd quangtri.gov.vn — cert chain không hợp lệ)
+    # Default False = Playwright default. Per-source, không global.
+    ignore_https_errors: bool = False
 
 
 SOURCES: list[Source] = [

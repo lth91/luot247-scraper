@@ -78,6 +78,7 @@ def _row_to_source(row: dict) -> Source | None:
         category=cfg.get("category", "bao-chi"),
         wait_after_load_ms=cfg.get("wait_after_load_ms"),
         user_agent=cfg.get("user_agent"),
+        ignore_https_errors=bool(cfg.get("ignore_https_errors", False)),
     )
 
 
